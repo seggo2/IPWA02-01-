@@ -6,6 +6,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Geisternetz {
@@ -13,6 +14,10 @@ public class Geisternetz {
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne
+    private Person bergendePerson;
+
 
     private String standort;
     private String groesse;
@@ -36,7 +41,7 @@ public class Geisternetz {
     }
 
     public Long getId() { return id; }
-    
+
     public String getStandort() { return standort; }
     public void setStandort(String standort) { this.standort = standort; }
 
@@ -45,6 +50,14 @@ public class Geisternetz {
 
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
+
+    public Person getBergendePerson() {
+        return bergendePerson;
+    }
+    public void setBergendePerson(Person bergendePerson) {
+        this.bergendePerson = bergendePerson;
+    }
+    
 
 
 }
