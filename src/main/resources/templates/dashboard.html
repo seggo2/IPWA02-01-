@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>GhostNet Dashboard</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Leaflet für Karte -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body class="bg-light text-dark">
+
+<div class="container py-5">
+
+    <!-- HEADER -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 animate__animated animate__fadeInDown">GhostNet Rescue Dashboard</h1>
+        <p class="lead">Erfassen, retten und aufklären – alles auf einen Blick.</p>
+        <img src="https://www.wwf.de/fileadmin/_processed_/a/e/csm_Schildkro%CC%88te-gefangen-im-mittelmeer-WW24369-c-jordi-chias-wwf_c355c7375a.jpg"
+             class="img-fluid rounded shadow-sm mt-3" alt="Geisternetz im Meer" style="max-height: 400px;">
+    </div>
+
+    <!-- INFOBOX -->
+    <div class="alert alert-info shadow-sm">
+        <h4><i class="fas fa-circle-info"></i> Was sind Geisternetze?</h4>
+        <p>
+            Geisternetze sind verlorene oder absichtlich entsorgte Fischernetze, die frei im Meer treiben.
+            Sie töten jedes Jahr Millionen Meerestiere, darunter Schildkröten, Delfine und Fische. Studien
+            zeigen, dass weltweit bis zu <strong>640.000 Tonnen Fischereigerät</strong> jährlich in den Meeren verloren gehen.
+            Diese App hilft dabei, solche Netze zu melden, zu bergen und die Umwelt zu schützen.
+        </p>
+    </div>
+
+    <!-- NAVIGATION -->
+    <div class="row text-center mb-5">
+        <div class="col-md-6 mb-3">
+            <a href="/geisternetze" class="btn btn-primary w-100 py-3">
+                <i class="fas fa-list"></i> Geisternetze anzeigen
+            </a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="/geisternetze/neu" class="btn btn-success w-100 py-3">
+                <i class="fas fa-plus-circle"></i> Neues Netz erfassen
+            </a>
+        </div>
+    </div>
+
+    <!-- KARTE & RANKING -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <h3><i class="fas fa-globe-europe"></i> Gemeldete Netze</h3>
+            <div id="map" style="height: 300px; border-radius: 10px; background: #ddd;"></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <h3><i class="fas fa-trophy"></i> Top-Bergende Personen</h3>
+            <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Ali Yilmaz</span><span class="badge bg-success">12 Netze</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Ocean Savers</span><span class="badge bg-info">9 Netze</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Deep Blue Divers</span><span class="badge bg-warning">7 Netze</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="text-center mt-5 mb-3 text-muted">
+    &copy; 2025 GhostNet Rescue – entwickelt von Sefa Gür
+</footer>
+
+<!-- Leaflet-Karte befüllen -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+      var map = L.map('map').setView([52.5, 13.4], 4);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '&copy; OpenStreetMap-Mitwirkende'
+      }).addTo(map);
+    
+      var netze = /*[[${GEMELDET}]]*/ [];    
+      netze.forEach(function(netz) {
+          if (netz.standort && netz.standort.includes(",")) {
+              var parts = netz.standort.split(",");
+              var lat = parseFloat(parts[0].trim());
+              var lng = parseFloat(parts[1].trim());
+              if (!isNaN(lat) && !isNaN(lng)) {
+                  L.marker([lat, lng])
+                      .addTo(map)
+                      .bindPopup("Netz #" + netz.id + "<br>Status: " + netz.status);
+              }
+          }
+      });
+    /*]]>*/
+    </script>
+    
+    
+    
+    
+
+</body>
+</html>

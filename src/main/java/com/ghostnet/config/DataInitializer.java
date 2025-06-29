@@ -1,5 +1,8 @@
 package com.ghostnet.config;
 
+import java.util.Locale;
+import java.util.Random;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,27 +18,40 @@ import com.ghostnet.repository.PersonRepository;
 public class DataInitializer {
 
     @Bean
+    @SuppressWarnings("unused")
     CommandLineRunner initData(GeisternetzRepository netzRepo, PersonRepository personRepo) {
         return args -> {
+
             if (personRepo.count() == 0) {
-                personRepo.save(new Person("Lisa Berger", "0123-111", Rolle.MELDEND));
-                personRepo.save(new Person("Ali Yilmaz", "0123-222", Rolle.BERGEND));
-                personRepo.save(new Person("Nina Lorenz", null, Rolle.MELDEND));
+                for (int i = 1; i <= 20; i++) {
+                    Rolle rolle = (i % 2 == 0) ? Rolle.BERGEND : Rolle.MELDEND;
+                    String telefon = rolle == Rolle.MELDEND && i % 3 == 0 ? null : "0123-" + (100 + i);
+                    personRepo.save(new Person("Person " + i, telefon, rolle));
+                }
             }
-    
+
             if (netzRepo.count() == 0) {
-                Person ali = personRepo.findById(2L).orElseThrow();
-    
-                Geisternetz netz1 = new Geisternetz("53.123, 10.987", "5x5m", Status.BERGUNG_BEVORSTEHEND);
-                netz1.setBergendePerson(ali);
-                netzRepo.save(netz1);
-    
-                netzRepo.save(new Geisternetz("54.001, 11.222", "3x4m", Status.GEMELDET));
-                netzRepo.save(new Geisternetz("55.111, 9.999", "7x3m", Status.GEMELDET));
+                Random random = new Random();
+                for (int i = 1; i <= 20; i++) {
+                    double lat = 50 + random.nextDouble() * 10; // 50.0000 - 60.0000
+                    double lon = 5 + random.nextDouble() * 10;  // 5.0000 - 15.0000
+
+                    // Punkt statt Komma zur Trennung
+                    String standort = String.format(Locale.US, "%.4f, %.4f", lat, lon);
+
+                    String groesse = (2 + random.nextInt(5)) + "x" + (2 + random.nextInt(5)) + "m";
+                    Status status = Status.values()[random.nextInt(Status.values().length)];
+
+                    Geisternetz netz = new Geisternetz(standort, groesse, status);
+
+                    if (status != Status.GEMELDET) {
+                        Person person = personRepo.findById((long) (2 + random.nextInt(10))).orElse(null);
+                        netz.setBergendePerson(person);
+                    }
+
+                    netzRepo.save(netz);
+                }
             }
         };
     }
-    
 }
-
-
