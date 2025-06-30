@@ -1,6 +1,7 @@
 package com.ghostnet.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,13 +29,6 @@ public class GeisternetzViewController {
     public String showGeisternetze(Model model) {
         model.addAttribute("netze", geisternetzRepository.findAll());
         return "geisternetze";
-    }
-
-    @GetMapping("/geisternetze/reservierung")
-    public String zeigeBergungsAktionen(Model model) {
-        List<Geisternetz> offeneNetze = geisternetzRepository.findByStatus(Geisternetz.Status.GEMELDET);
-        model.addAttribute("offeneNetze", offeneNetze);
-        return "geisternetze-condition";
     }
 
     @GetMapping("/geisternetze/neu")
@@ -85,24 +79,73 @@ public class GeisternetzViewController {
         return "redirect:/geisternetze";
     }
 
+
+
+
+
+    
+    @GetMapping("/geisternetze/auth")
+    public String zeigeAuthForm() {
+        return "geisternetze-auth";
+    }
+
+    @PostMapping("/geisternetze/auth")
+    public String pruefeBergendePerson(@RequestParam String telefonnummer, Model model) {
+        Optional<Person> optPerson = personRepository.findByTelefonnummerAndRolle(telefonnummer, Person.Rolle.BERGEND);
+
+        if (optPerson.isPresent()) {
+            return "redirect:/geisternetze/reservierung?telefonnummer=" + telefonnummer;
+        } else {
+            model.addAttribute("error", "Ungültige Telefonnummer oder keine bergende Person gefunden.");
+            return "geisternetze-auth";
+        }
+    }
+
+    @GetMapping("/geisternetze/reservierung")
+    public String zeigeReservierungsseite(@RequestParam String telefonnummer, Model model) {
+        Optional<Person> optPerson = personRepository.findByTelefonnummerAndRolle(telefonnummer, Person.Rolle.BERGEND);
+
+        if (optPerson.isEmpty()) {
+            model.addAttribute("error", "Ungültige Telefonnummer.");
+            return "geisternetze-auth";
+        }
+
+        Person person = optPerson.get();
+        List<Geisternetz> offeneNetze = geisternetzRepository.findByStatus(Geisternetz.Status.GEMELDET);
+        List<Geisternetz> eigeneNetze = geisternetzRepository.findByBergendePersonAndStatus(person,
+                Geisternetz.Status.BERGUNG_BEVORSTEHEND);
+
+        model.addAttribute("telefonnummer", telefonnummer);
+        model.addAttribute("offeneNetze", offeneNetze);
+        model.addAttribute("eigeneNetze", eigeneNetze);
+        return "geisternetze-reservierung";
+    }
+
     @PostMapping("/geisternetze/reservierung")
-    public String bearbeiteNetzAktion(@RequestParam Long netzId, @RequestParam String telefonnummer, @RequestParam String aktion, Model model) {
-
-        Person person = personRepository.findByTelefonnummer(telefonnummer)
-                .orElse(null);
-
-        if (person == null || person.getRolle() != Person.Rolle.BERGEND) {
-            model.addAttribute("error",
-                    "Nur bergende Personen mit gültiger Telefonnummer dürfen Aktionen durchführen.");
-            return "geisternetze-condition";
+    public String bearbeiteReservierung(
+            @RequestParam Long netzId,
+            @RequestParam String telefonnummer,
+            @RequestParam String aktion,
+            Model model) {
+    
+        Optional<Person> optPerson = personRepository.findByTelefonnummerAndRolle(telefonnummer, Person.Rolle.BERGEND);
+        if (optPerson.isEmpty()) {
+            model.addAttribute("error", "Ungültige Telefonnummer oder keine Berechtigung.");
+            model.addAttribute("telefonnummer", telefonnummer);
+            return "geisternetze-auth";
         }
-
-        Geisternetz netz = geisternetzRepository.findById(netzId).orElse(null);
-        if (netz == null) {
+    
+        Person person = optPerson.get();
+        Optional<Geisternetz> optNetz = geisternetzRepository.findById(netzId);
+        if (optNetz.isEmpty()) {
             model.addAttribute("error", "Netz nicht gefunden.");
-            return "geisternetze-condition";
+            model.addAttribute("telefonnummer", telefonnummer);
+            ladeNetzListen(model, person);
+            return "geisternetze-reservierung";
         }
-
+    
+        Geisternetz netz = optNetz.get();
+    
         switch (aktion) {
             case "reservieren" -> {
                 if (netz.getStatus() == Geisternetz.Status.GEMELDET) {
@@ -110,44 +153,64 @@ public class GeisternetzViewController {
                     netz.setStatus(Geisternetz.Status.BERGUNG_BEVORSTEHEND);
                 } else {
                     model.addAttribute("error", "Nur GEMELDETE Netze können reserviert werden.");
-                    return "geisternetze-condition";
+                    model.addAttribute("telefonnummer", telefonnummer);
+                    ladeNetzListen(model, person);
+                    return "geisternetze-reservierung";
                 }
             }
-
+    
             case "geborgen" -> {
-                if (netz.getBergendePerson() != null && netz.getBergendePerson().equals(person)) {
+                if (person.equals(netz.getBergendePerson())) {
                     netz.setStatus(Geisternetz.Status.GEBORGEN);
                 } else {
-                    model.addAttribute("error", "Nur die reservierende Person darf das Netz als geborgen melden.");
-                    return "geisternetze-condition";
+                    model.addAttribute("error", "Nur du darfst dieses Netz als geborgen melden.");
+                    model.addAttribute("telefonnummer", telefonnummer);
+                    ladeNetzListen(model, person);
+                    return "geisternetze-reservierung";
                 }
             }
-
+    
             case "verschollen" -> {
                 if (netz.getStatus() == Geisternetz.Status.GEMELDET ||
-                        (netz.getStatus() == Geisternetz.Status.BERGUNG_BEVORSTEHEND
-                                && person.equals(netz.getBergendePerson()))) {
+                    (netz.getStatus() == Geisternetz.Status.BERGUNG_BEVORSTEHEND && person.equals(netz.getBergendePerson()))) {
                     netz.setStatus(Geisternetz.Status.VERSCHOLLEN);
                 } else {
-                    model.addAttribute("error", "Bedingungen für verschollen melden nicht erfüllt.");
-                    return "geisternetze-condition";
+                    model.addAttribute("error", "Du darfst dieses Netz nicht als verschollen melden.");
+                    model.addAttribute("telefonnummer", telefonnummer);
+                    ladeNetzListen(model, person);
+                    return "geisternetze-reservierung";
                 }
             }
-
+    
             case "zuruecksetzen" -> {
                 if (netz.getStatus() == Geisternetz.Status.BERGUNG_BEVORSTEHEND &&
-                        person.equals(netz.getBergendePerson())) {
-                    netz.setBergendePerson(null);
+                    person.equals(netz.getBergendePerson())) {
                     netz.setStatus(Geisternetz.Status.GEMELDET);
+                    netz.setBergendePerson(null);
                 } else {
-                    model.addAttribute("error", "Nur die reservierende Person kann das Netz zurücksetzen.");
+                    model.addAttribute("error", "Nur du darfst das Netz zurücksetzen.");
+                    model.addAttribute("telefonnummer", telefonnummer);
+                    ladeNetzListen(model, person);
                     return "geisternetze-reservierung";
                 }
             }
         }
-
+    
         geisternetzRepository.save(netz);
-        return "redirect:/geisternetze";
+        // Weiterleitung nach erfolgreicher Aktion (mit Listen neu laden)
+        model.addAttribute("telefonnummer", telefonnummer);
+        ladeNetzListen(model, person);
+        model.addAttribute("success", "Aktion erfolgreich durchgeführt.");
+        return "geisternetze-reservierung";
     }
 
+    private void ladeNetzListen(Model model, Person person) {
+        List<Geisternetz> offeneNetze = geisternetzRepository.findByStatus(Geisternetz.Status.GEMELDET);
+        List<Geisternetz> eigeneNetze = geisternetzRepository.findAll().stream()
+            .filter(n -> person.equals(n.getBergendePerson()))
+            .toList();
+        model.addAttribute("offeneNetze", offeneNetze);
+        model.addAttribute("eigeneNetze", eigeneNetze);
+    }
+    
 }

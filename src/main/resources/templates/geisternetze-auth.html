@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Geisternetz Authentifizierung</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light text-dark">
+<div class="container mt-5">
+  <h2 class="mb-4">Authentifizierung – Bergende Person</h2>
+
+  <!-- Fehleranzeige -->
+  <div th:if="${error}" class="alert alert-danger" role="alert">
+    <span th:text="${error}">Fehler bei der Eingabe.</span>
+  </div>
+  <div class="mb-3 text-start">
+    <a href="/dashboard" class="btn btn-outline-secondary">Zurück zum Dashboard</a>
+  </div>
+  <form method="post" action="/geisternetze/auth" class="card p-4 shadow-sm bg-white rounded">
+    <div class="mb-3">
+      <label for="telefonnummer" class="form-label">Telefonnummer</label>
+      <input type="text" class="form-control" id="telefonnummer" name="telefonnummer"
+             placeholder="z. B. 017612345678" required>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Weiter</button>
+  </form>
+  
+</div>
+</body>
+</html>

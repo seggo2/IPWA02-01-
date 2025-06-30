@@ -14,4 +14,5 @@ public interface GeisternetzRepository extends JpaRepository<Geisternetz, Long> 
     List<Geisternetz> findByStatus(Geisternetz.Status status);
     List<Geisternetz> findByBergendePersonAndStatus(Person person, Geisternetz.Status status);
 
+
 }
