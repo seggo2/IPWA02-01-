@@ -60,7 +60,6 @@ public class GeisternetzViewController {
             return "geisternetze-form";
         }
 
-        // --- Netz erfassen ---
         Geisternetz netz = new Geisternetz();
         netz.setStandort(standort);
         netz.setGroesse(groesse);
@@ -79,11 +78,6 @@ public class GeisternetzViewController {
         return "redirect:/geisternetze";
     }
 
-
-
-
-
-    
     @GetMapping("/geisternetze/auth")
     public String zeigeAuthForm() {
         return "geisternetze-auth";
