@@ -33,10 +33,9 @@ public class DataInitializer {
             if (netzRepo.count() == 0) {
                 Random random = new Random();
                 for (int i = 1; i <= 20; i++) {
-                    double lat = 50 + random.nextDouble() * 10; // 50.0000 - 60.0000
-                    double lon = 5 + random.nextDouble() * 10;  // 5.0000 - 15.0000
+                    double lat = 50 + random.nextDouble() * 10; 
+                    double lon = 5 + random.nextDouble() * 10;  
 
-                    // Punkt statt Komma zur Trennung
                     String standort = String.format(Locale.US, "%.4f, %.4f", lat, lon);
 
                     String groesse = (2 + random.nextInt(5)) + "x" + (2 + random.nextInt(5)) + "m";
